@@ -12,7 +12,6 @@ from statsmodels.tsa.statespace.varmax import VARMAX
 from statsmodels.tsa.stattools import adfuller, grangercausalitytests, pacf
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 # import yfinance as yfin
 # yfin.pdr_override()
@@ -33,14 +32,13 @@ n_future = 1  # number of future stock prices to predict while training
 n_lags = 14  # number of past stock price to consider while training
 forecasted = []
 # causality_data = []
-mses = []
 
-# master_data = pdr.get_data_yahoo(stock_symbols + commodity_symbols, start, end, interval=interval)['Adj Close']
-# master_data.dropna(inplace=True)
-#
-# for i in range(len(stock_symbols)):
-#     data = master_data.loc[:, [stock_symbols[i]] + commodity_symbols]
-    # print(data.shape)
+master_data = pdr.get_data_yahoo(stock_symbols + commodity_symbols, start, end, interval=interval)['Adj Close']
+master_data.dropna(inplace=True)
+
+for i in range(len(stock_symbols)):
+    data = master_data.loc[:, [stock_symbols[i]] + commodity_symbols]
+    print(data.shape)
     # symbols = [stock_symbol] + commodity_symbols
 
     # Getting the data
@@ -52,18 +50,18 @@ mses = []
     # data.dropna(inplace=True)
 
     # normalizing the data
-    # scaler = StandardScaler()
-    # scaler = scaler.fit(data)
-    # data_scaled = scaler.transform(data)
-    #
-    # trainX = []
-    # trainY = []
-    #
-    # for index in range(n_lags, len(data_scaled) - n_future + 1):
-    #     trainX.append(data_scaled[index - n_lags: index, :data_scaled.shape[1]])
-    #     trainY.append(data_scaled[index + n_future - 1: index + n_future, 0])
-    #
-    # trainX, trainY = np.array(trainX), np.array(trainY)
+    scaler = StandardScaler()
+    scaler = scaler.fit(data)
+    data_scaled = scaler.transform(data)
+
+    trainX = []
+    trainY = []
+
+    for index in range(n_lags, len(data_scaled) - n_future + 1):
+        trainX.append(data_scaled[index - n_lags: index, :data_scaled.shape[1]])
+        trainY.append(data_scaled[index + n_future - 1: index + n_future, 0])
+
+    trainX, trainY = np.array(trainX), np.array(trainY)
     # print(trainX.shape, trainY.shape)
 
     # model = Sequential()
@@ -87,19 +85,18 @@ mses = []
     # plt.xlabel('epoch')
     # plt.show()
 
-    # best_model = tf.keras.models.load_model('model_{0}'.format(stock_symbols[i]))
-    # forecasted_prices_scaled = best_model.predict(trainX[-n_periods:])
-    #
-    # forecast_copies = np.repeat(forecasted_prices_scaled, data_scaled.shape[1], axis=-1)
-    # forecasted_prices = scaler.inverse_transform(forecast_copies)[:, 0]
+    best_model = tf.keras.models.load_model('model_{0}'.format(stock_symbols[i]))
+    forecasted_prices_scaled = best_model.predict(trainX[-n_periods:])
+
+    forecast_copies = np.repeat(forecasted_prices_scaled, data_scaled.shape[1], axis=-1)
+    forecasted_prices = scaler.inverse_transform(forecast_copies)[:, 0]
     # print(forecasted_prices.shape)
 
-    # forecasted.append(list(forecasted_prices))
+    forecasted.append(list(forecasted_prices))
     # print(data[-n_periods:].index)
     # print(forecasted_prices.shape, data.iloc[-n_periods:, 0].shape)
 
-    # print("MSE for {0}: ".format(stock_symbols[i]), mean_squared_error(data.iloc[-n_periods:, 0], forecasted_prices))
-    # mses.append(mean_squared_error(data.iloc[-n_periods:, 0], forecasted_prices))
+    # print("MSE for {0}: ".format(stock_symbol), mean_squared_error(data.iloc[-n_periods:, 0], forecasted_prices))
 
     # plt.title(stock_symbol)
     # plt.xlabel('Datetime')
@@ -122,9 +119,9 @@ mses = []
 
     # print(data.corr())
 
-    # if p-value of this test is >0.05 then data is non-stationary which has to be made stationary for ARIMA to work
+    # # if p-value of this test is >0.05 then data is non-stationary which has to be made stationary for ARIMA to work
     # opt_diff = float('-inf')
-    # for symbol in [stock_symbols[i]] + commodity_symbols:
+    # for symbol in symbols:
     #     diff = 0
     #     while True:
     #         if diff == 0:
@@ -152,41 +149,26 @@ mses = []
     #         continue
 
     #
-    # split into train and test
-    # train_data = data.iloc[:-n_periods, :]
-    # test_data = data.iloc[-n_periods:]
+    # # split into train and test
+    # train_data = data.iloc[:-30, :]
+    # test_data = data.iloc[-30:]
     #
     # # finding optimal lags
     # model = VAR(train_data.diff(periods=opt_diff)[opt_diff:])
-    # sorted_model = model.select_order(maxlags=15)
+    # sorted_model = model.select_order(maxlags=10)
     # p = np.argmin(sorted_model)
     #
     # # train the model
-    # var_model = VARMAX(train_data, order=(p, 1), enforce_stationarity=True)
+    # var_model = VARMAX(train_data, order=(1, 0), enforce_stationarity=True)
     # fitted_model = var_model.fit(disp=False)
     #
     # predict = fitted_model.get_prediction(start=len(train_data), end=len(train_data) + len(test_data) - 1)
     # predictions = predict.predicted_mean
     #
-    # plt.plot(test_data.index, test_data[stock_symbols[i]])
-    # plt.plot(test_data.index, predictions[stock_symbols[i]])
+    # plt.plot(test_data.index, test_data[stock_symbol])
+    # plt.plot(test_data.index, predictions[stock_symbol])
     # plt.show()
-    #
-    # break
 
-# forecasted = np.array(forecasted).T
-# df = pd.DataFrame(forecasted, index=master_data[-n_periods:].index, columns=stock_symbols)
-# df.to_csv('./predictions.csv')
-
-# fig = plt.figure(figsize=(10, 7))
-#
-# plt.boxplot(mses)
-#
-# plt.show()
-
-data = pd.read_csv('./Causality.csv', header=0, delimiter='\t')
-
-plt.figure(figsize=(10,10))
-heat_map = sns.heatmap(data, linewidth = 1 , annot = True)
-plt.title("Granger-Causality Test")
-plt.show()
+forecasted = np.array(forecasted).T
+df = pd.DataFrame(forecasted, index=master_data[-n_periods:].index, columns=stock_symbols)
+df.to_csv('./predictions.csv')
